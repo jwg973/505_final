@@ -1,8 +1,9 @@
 ---
 title: "Final Presentation"
-author: "Team $i$, or your names (up to you)"
+author: "Nicole Rodgers & Jon Garrow"
 date: "04/21/2025"
-format: revealjs
+format: revealjs:
+    embed-resources: true
 ---
 
 # Goal
