@@ -1,0 +1,49 @@
+---
+title: "Final Project Submission"
+author: "Jon Garrow and Nicole Rodgers"
+date: "04/21/2025"
+editor: visual
+
+format: 
+  html:
+    theme: minty  
+    mainfont: monospace
+    highlight-style: github
+    title-block-banner: true
+    embed-resources: true
+---
+
+```{r}
+library(tidyverse)
+library(caret)
+
+fast <- readRDS(gzcon(url("https://github.com/cd-public/D505/raw/refs/heads/master/dat/craven_train.rds")))
+
+engineer <- function(jgnr) {
+  names(jgnr) <- str_replace_all(names(jgnr), c(" " = "." , "," = "","&"="_","\\(" = "", "\\)" = ""))
+  jgnr <- jgnr %>%
+    mutate_at(3:28, ~ str_remove_all(., "[\\%]")) %>%
+    mutate_at(c(3:28, 36:37), ~ as.numeric(.)) %>%
+    mutate(Product.Type = str_remove_all(Product.Type, "[\\#]")) %>%
+    mutate_at(c(30, 31, 34, 35, 41:46), ~ as.factor(.)) %>%
+    mutate(Product.Type = if_else(is.na(Product.Type),"Other",Product.Type)) %>%
+    mutate(Main.Component.MFG.Process = if_else(is.na(Main.Component.MFG.Process), "(Other)",Main.Component.MFG.Process)) %>%
+    mutate(Main.Component.Material = if_else(is.na(Main.Component.Material), "(Other)",Main.Component.Material)) %>%
+    mutate(Main.Component.Finishing.Process = if_else(is.na(Main.Component.Finishing.Process), "None", Main.Component.Finishing.Process)) %>%
+    mutate(year_range = yearMax - yearMin) %>%
+    mutate(pct.third.party = pct_Platypus + pct_R_D.Club + pct_Moss.Motors.Only) %>%
+    select(Product.Type, Main.Component.MFG.Process, Main.Component.Material, Main.Component.Finishing.Process,
+           year_range, pct_Orders.for.Stock, pct_Drop.Shipments, pct.third.party, Listing.Type, Number.of.Components) %>%
+    mutate(year_range = if_else(is.na(year_range), 0, year_range))
+}
+
+profit <- fast["Revenue 2019 to present"] - fast["BOM Cost"] * fast["Units Sold"]
+fast <- fast %>% engineer()
+fast <- fast |> select(1:10) # Max 10 features
+fast["Profit"] = profit
+
+train(Profit ~ .,
+      data = fast, 
+      method = "lm",
+      trControl = trainControl(method = "cv", number = 5))$results$RMSE
+```
